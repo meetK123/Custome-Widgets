@@ -1,0 +1,288 @@
+import "package:collection/collection.dart";
+import 'package:cached_network_image/cached_network_image.dart';
+
+import 'package:custom_map/model/county_continent_model/country_continent_model.dart';
+import 'package:custom_map/model/model.dart';
+import 'package:custom_map/widget/country_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:syncfusion_flutter_maps/maps.dart';
+import '../model/county_continent_model/country_continent_list.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({
+    super.key,
+  });
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  MapZoomPanBehavior? zoomPanBehavior;
+
+  ///selected country add into this list
+  ValueNotifier<List<Model>> _data = ValueNotifier([]);
+
+  final List<Map<String, dynamic>> newContinentList = countryContinentList;
+
+  final List<Map<String, dynamic>> countryContinentMapList = [];
+
+  late Map<String, List<CountryContinentModel>> groupedCountries;
+  late MapTileLayerController _mapController;
+
+  List<int> selectedItems = [];
+
+  @override
+  void initState() {
+    ///temp data
+    _data = ValueNotifier([
+      const Model(country: '', state: '', color: Colors.green),
+    ]);
+    _mapController = MapTileLayerController();
+
+    /// zoom controller
+    zoomPanBehavior = MapZoomPanBehavior(enableDoubleTapZooming: false, enablePinching: true, maxZoomLevel: 10, minZoomLevel: 1);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double height = MediaQuery.of(context).size.height;
+    return Scaffold(
+      backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: false,
+      body: SafeArea(
+        child: Center(
+          child: SizedBox(
+            height: height / 4,
+            child: GestureDetector(
+              onTap: () {
+                ///  _showCountry();
+                _showCountryContinent();
+              },
+              child: ValueListenableBuilder(
+                valueListenable: _data,
+                builder: (context, List<Model>? value, _) {
+                  return SfMaps(
+                    layers: <MapShapeLayer>[
+                      MapShapeLayer(
+                        ///main world json
+                        source: MapShapeSource.asset(
+                          'assets/map/world_map.json',
+                          shapeDataField: 'name',
+                          dataCount: value!.length,
+                          primaryValueMapper: (int index) {
+                            for (var value2 in _data.value) {
+                              debugPrint('****${value2.country}');
+                              debugPrint('Condition---${value[index].country == value2.country}');
+                            }
+                            return value[index].country ?? '';
+                          },
+                          shapeColorValueMapper: (int index) => value[index].color,
+                        ),
+                        showDataLabels: false,
+                        color: Colors.grey,
+                        strokeColor: value.length > 1 ? Colors.white : Colors.grey,
+                        strokeWidth: value.length > 1 ? 0.5 : null,
+                        zoomPanBehavior: zoomPanBehavior,
+                        sublayers: [
+                          ///usa json
+                          MapShapeSublayer(
+                            source: MapShapeSource.asset(
+                              'assets/map/usa.json',
+                              shapeDataField: 'name',
+                              dataCount: value.length,
+                              primaryValueMapper: (int index) {
+                                for (var value2 in _data.value) {
+                                  debugPrint('****${value2.country}');
+                                  debugPrint('Condition---${value[index].country == value2.country}');
+                                }
+
+                                return value[index].country ?? '';
+                              },
+                              shapeColorValueMapper: (int index) => value[index].color,
+                            ),
+                            color: Colors.grey,
+                            strokeColor: value.length > 1 ? Colors.white : Colors.grey,
+                            strokeWidth: value.length > 1 ? 0.5 : null,
+                          )
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          ElevatedButton(
+              onPressed: () {
+                _showCountryContinent();
+              },
+              child: const Icon(Icons.add)),
+          ElevatedButton(
+              onPressed: () {
+                ///reset controller
+                zoomPanBehavior?.reset();
+                setState(() {});
+              },
+              child: const Icon(Icons.restart_alt_rounded)),
+          ElevatedButton(
+              onPressed: () {
+                zoomPanBehavior?.reset();
+                _data.value.clear();
+                selectedItems.clear();
+                _data = ValueNotifier([
+                  const Model(country: '', state: '', color: Colors.green),
+                ]);
+                setState(() {});
+              },
+              child: const Icon(Icons.clear)),
+        ],
+      ),
+    );
+  }
+
+  ///get countries from json response
+  Future<dynamic> getCountries() async {
+    try {
+      List<Map<String, dynamic>> jsonList = newContinentList;
+
+      List<CountryContinentModel> elements = jsonList.map((json) => CountryContinentModel.fromJson(json)).toList();
+
+      ///group of  CountryContinent
+      groupedCountries = groupBy(elements, (CountryContinentModel value) => value.continent ?? '');
+    } on Exception catch (e, st) {
+      debugPrint('ERROR$e');
+      debugPrint('StackTrace$st');
+    }
+  }
+
+  Future<void> _showCountryContinent() async {
+    getCountries();
+    await showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        showDragHandle: false,
+        barrierColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+        clipBehavior: Clip.none,
+        builder: (BuildContext context) {
+          return Container(
+            height: 500,
+            decoration: const BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.all(Radius.circular(20))),
+            margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: ListView.builder(
+              itemCount: groupedCountries.length,
+              itemBuilder: (context, index) {
+                String continent = groupedCountries.keys.elementAt(index);
+                List<CountryContinentModel> countries = groupedCountries.values.elementAt(index);
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        'Continent: $continent',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+                      ),
+                    ),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: countries.length,
+                      itemBuilder: (context, index) {
+                        CountryContinentModel country = countries[index];
+                        return GestureDetector(
+                          onTap: () {
+                            try {
+                              if (selectedItems.contains(index)) {
+                                selectedItems.remove(index);
+                                _data.value.removeWhere(
+                                  (element) => element.country == country.name,
+                                );
+                              } else {
+                                selectedItems.add(index);
+                                _data.value.add(Model(country: country.name, color: Colors.green));
+                              }
+                              _data.notifyListeners();
+                            } on Exception catch (e, st) {
+                              debugPrint('ERROR$e');
+                              debugPrint('Stack Trace$st');
+                            }
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.max,
+                              children: [
+                                country.flag4x3!.isEmpty
+                                    ? SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CachedNetworkImage(
+                                            imageUrl: country.url ?? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTULSPiQKGEcCtCxrkr4t9Ub8U-Jwzv3kXu2RMOzQoihg&s"))
+                                    : SvgPicture.asset(
+                                        'assets/flags/4x3/${country.flag4x3}',
+                                        width: 15,
+                                        height: 15,
+                                      ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                    child: Text('${country.name} ',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ))),
+                                selectedItems.contains(index)
+                                    ? const Icon(
+                                        Icons.check,
+                                        color: Colors.green,
+                                      )
+                                    : const SizedBox.shrink(),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
+          );
+        });
+  }
+
+  ///custom Country picker it is not used
+  Future<void> _showCountry() async {
+    await showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        showDragHandle: false,
+        barrierColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+        clipBehavior: Clip.none,
+        builder: (BuildContext context) {
+          return CountryPicker(
+            callBack: (String value) {
+              _data.value.add(Model(country: value, color: Colors.green));
+              _data.notifyListeners();
+            },
+          );
+        });
+  }
+}
