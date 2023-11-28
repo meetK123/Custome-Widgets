@@ -4,13 +4,19 @@ A new Flutter project.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+## Custom Map  
 
-A few resources to get you started if this is your first Flutter project:
+A custom map  project that allows to highlight the country on  the world map.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+https://github.com/meetK123/Custome-Widgets/assets/123739962/d5178c6c-56e4-4b9f-9108-8260f5ea0e89
+
+![Simulator Screen Shot - iPhone 14 Pro - ](https://github.com/meetK123/Custome-Widgets/assets/123739962/ab5473f0-6f08-4fd2-91ac-d1afc1e25e75)
+![Simulator Screen Shot - iPhone 14 Pro - ](https://github.com/meetK123/Custome-Widgets/assets/123739962/b8572b99-b5fd-4749-a637-43174d62e9d1)
+![Simulator Screen Shot - iPhone 14 Pro - ](https://github.com/meetK123/Custome-Widgets/assets/123739962/08b44927-c495-4311-8a4e-8cf1f378ade9)
+
+## Note :
+- There is a country list that needs to be updated.  
+- If the country name does not match with json of map then it's not highlighted on the map.
+
+
